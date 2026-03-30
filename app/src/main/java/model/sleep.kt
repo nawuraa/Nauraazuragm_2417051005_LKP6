@@ -1,9 +1,8 @@
 package com.esqee.nauraazuragm_2417051005.model
-import androidx.annotation.DrawableRes
 
 data class Sleep(
-    val hari: String,
-    val jam: Int,
+    val nama: String,
     val deskripsi: String,
-    @DrawableRes val imageRes: Int
+    val durasi: String,
+    val imageRes: Int
 )

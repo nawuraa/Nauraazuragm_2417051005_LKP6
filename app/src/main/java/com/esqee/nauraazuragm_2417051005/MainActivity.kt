@@ -4,54 +4,270 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Typography
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.esqee.nauraazuragm_2417051005.model.sleepsource
-import com.esqee.nauraazuragm_2417051005.ui.theme.Nauraazuragm_2417051005Theme
+import androidx.compose.ui.unit.sp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            Nauraazuragm_2417051005Theme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        modifier = Modifier.padding(innerPadding)
-                    )
+            PraktiktamTheme {
+                HomeScreen()
+            }
+        }
+    }
+}
+
+
+
+data class Sleep(
+    val nama: String,
+    val deskripsi: String,
+    val durasi: String,
+    val imageRes: Int
+)
+
+val dummySleep = listOf(
+    Sleep("Night Sleep", "Tidur malam berkualitas", "7 Jam", R.drawable.sleep),
+    Sleep("Nap Time", "Tidur siang sebentar", "1 Jam", R.drawable.cycle),
+    Sleep("Deep Sleep", "Tidur sangat nyenyak", "6 Jam", R.drawable.jam)
+)
+
+
+@Composable
+fun HomeScreen() {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+
+        item {
+            Text(
+                text = "Rekomendasi Tidur",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground // ✅ FIX
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(dummySleep) { sleep ->
+                    SleepRowItem(sleep)
                 }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Daftar Sleep",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground // ✅ FIX
+            )
+        }
+
+        items(dummySleep) { sleep ->
+            DetailScreen(sleep)
+        }
+    }
+}
+
+@Composable
+fun SleepRowItem(sleep: Sleep) {
+    Card(
+        modifier = Modifier.width(160.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column {
+            Image(
+                painter = painterResource(id = sleep.imageRes),
+                contentDescription = sleep.nama,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp),
+                contentScale = ContentScale.Crop
+            )
+
+            Column(modifier = Modifier.padding(8.dp)) {
+                Text(
+                    text = sleep.nama,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface // ✅ FIX
+                )
+
+                Text(
+                    text = sleep.durasi,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
 }
 
 @Composable
-fun Greeting(modifier: Modifier = Modifier) {
+fun DetailScreen(sleep: Sleep) {
+    var isFavorite by remember { mutableStateOf(false) }
 
-    val sleep = sleepsource.dummysleep[0]
-
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
-        Text(text = "Hari: ${sleep.hari}")
-        Text(text = "Jam: ${sleep.jam}")
-        Text(text = "Deskripsi: ${sleep.deskripsi}")
+        Column {
+
+            Box {
+                Image(
+                    painter = painterResource(id = sleep.imageRes),
+                    contentDescription = sleep.nama,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentScale = ContentScale.Crop
+                )
+
+                IconButton(
+                    onClick = { isFavorite = !isFavorite },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite)
+                            Icons.Filled.Favorite
+                        else
+                            Icons.Outlined.FavoriteBorder,
+                        contentDescription = null,
+                        tint = if (isFavorite)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.padding(16.dp)) {
+
+                Text(
+                    text = sleep.nama,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface //
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = sleep.deskripsi,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface //
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Durasi: ${sleep.durasi}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = { },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Mulai Tidur")
+                }
+            }
+        }
     }
 }
 
-@Preview(showBackground = true)
+
+private val AppColors = lightColorScheme(
+    primary = Color(0xFF5C6BC0),
+    secondary = Color(0xFF1A237E),
+    background = Color(0xFF0D1117),
+    surface = Color(0xFF161B22),
+    onPrimary = Color.White,
+    onBackground = Color.White, //
+    onSurface = Color.White //
+)
+
+private val AppTypography = Typography(
+    titleLarge = TextStyle(
+        fontSize = 24.sp,
+        fontWeight = FontWeight.Bold
+    ),
+    titleMedium = TextStyle(
+        fontSize = 18.sp,
+        fontWeight = FontWeight.SemiBold
+    ),
+    bodyMedium = TextStyle(
+        fontSize = 14.sp
+    ),
+    bodySmall = TextStyle(
+        fontSize = 12.sp
+    )
+)
+
 @Composable
-fun GreetingPreview() {
-    Nauraazuragm_2417051005Theme {
-        Greeting()
-    }
+fun PraktiktamTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = AppColors,
+        typography = AppTypography,
+        content = content
+    )
 }
