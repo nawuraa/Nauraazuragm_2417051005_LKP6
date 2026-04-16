@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,9 +28,12 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.Typography
 import androidx.compose.material3.lightColorScheme
@@ -37,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +52,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.esqee.nauraazuragm_2417051005.model.Sleep
+import com.esqee.nauraazuragm_2417051005.model.SleepSource
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,22 +69,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
-
-data class Sleep(
-    val nama: String,
-    val deskripsi: String,
-    val durasi: String,
-    val imageRes: Int
-)
-
-val dummySleep = listOf(
-    Sleep("Night Sleep", "Tidur malam berkualitas", "7 Jam", R.drawable.sleep),
-    Sleep("Nap Time", "Tidur siang sebentar", "1 Jam", R.drawable.cycle),
-    Sleep("Deep Sleep", "Tidur sangat nyenyak", "6 Jam", R.drawable.jam)
-)
-
-
 @Composable
 fun HomeScreen() {
     LazyColumn(
@@ -86,12 +79,11 @@ fun HomeScreen() {
         contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-
         item {
             Text(
                 text = "Rekomendasi Tidur",
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground // ✅ FIX
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -99,7 +91,7 @@ fun HomeScreen() {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(dummySleep) { sleep ->
+                items(SleepSource.dummySleep) { sleep ->
                     SleepRowItem(sleep)
                 }
             }
@@ -109,11 +101,11 @@ fun HomeScreen() {
             Text(
                 text = "Daftar Sleep",
                 style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground // ✅ FIX
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
-        items(dummySleep) { sleep ->
+        items(SleepSource.dummySleep) { sleep ->
             DetailScreen(sleep)
         }
     }
@@ -142,7 +134,7 @@ fun SleepRowItem(sleep: Sleep) {
                 Text(
                     text = sleep.nama,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface // ✅ FIX
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
@@ -158,83 +150,110 @@ fun SleepRowItem(sleep: Sleep) {
 @Composable
 fun DetailScreen(sleep: Sleep) {
     var isFavorite by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column {
-
-            Box {
-                Image(
-                    painter = painterResource(id = sleep.imageRes),
-                    contentDescription = sleep.nama,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentScale = ContentScale.Crop
-                )
-
-                IconButton(
-                    onClick = { isFavorite = !isFavorite },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isFavorite)
-                            Icons.Filled.Favorite
-                        else
-                            Icons.Outlined.FavoriteBorder,
-                        contentDescription = null,
-                        tint = if (isFavorite)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column {
+                Box {
+                    Image(
+                        painter = painterResource(id = sleep.imageRes),
+                        contentDescription = sleep.nama,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentScale = ContentScale.Crop
                     )
+
+                    IconButton(
+                        onClick = { isFavorite = !isFavorite },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite)
+                                Icons.Filled.Favorite
+                            else
+                                Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            tint = if (isFavorite)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
-            }
 
-            Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = sleep.nama,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                Text(
-                    text = sleep.nama,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface //
-                )
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = sleep.deskripsi,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
 
-                Text(
-                    text = sleep.deskripsi,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface //
-                )
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Durasi: ${sleep.durasi}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-                Text(
-                    text = "Durasi: ${sleep.durasi}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = { },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Mulai Tidur")
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                isLoading = true
+                                delay(2000)
+                                snackbarHostState.showSnackbar(
+                                    "Sesi ${sleep.nama} berhasil diproses!"
+                                )
+                                isLoading = false
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Memproses...")
+                        } else {
+                            Text("Mulai Tidur")
+                        }
+                    }
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 }
-
 
 private val AppColors = lightColorScheme(
     primary = Color(0xFF5C6BC0),
@@ -242,8 +261,8 @@ private val AppColors = lightColorScheme(
     background = Color(0xFF0D1117),
     surface = Color(0xFF161B22),
     onPrimary = Color.White,
-    onBackground = Color.White, //
-    onSurface = Color.White //
+    onBackground = Color.White,
+    onSurface = Color.White
 )
 
 private val AppTypography = Typography(
